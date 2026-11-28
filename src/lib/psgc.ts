@@ -8,6 +8,8 @@ import { haversineKm } from '@/lib/customerLocation';
 export interface PsgcItem {
   readonly code: string;
   readonly name: string;
+  /** Davao City barangays: the district it is in. */
+  readonly district?: string | null;
 }
 
 /** A shop/branch area picked from PSGC. Codes go to the server; names are for display. */

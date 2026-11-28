@@ -10,155 +10,104 @@ export interface PlaceSearchResult {
   display_name: string;
 }
 
-// A free service that hangs must not hold the address on "Locating…" forever.
-const LOOKUP_TIMEOUT_MS = 5000;
+const cleanDistrict = (d?: string) => (d ?? '').replace(/\s+district$/i, '').trim();
 
-// Photon (OSM / Komoot): short, street-level names ("Abreeza Residences,
-// Poblacion, Davao City"). Null when it has nothing usable.
-async function photonReverse(lat: number, lng: number): Promise<GeocodeResult | null> {
-  try {
-    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}`, {
-      headers: { Accept: 'application/json' },
-      signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS),
-    });
-    if (!res.ok) return null;
-    const data = await res.json();
-    const feature = data?.features?.[0]?.properties;
-    if (!feature) return null;
-    const parts: string[] = [];
-    // Street first: `name` is the nearest shop or landmark, which changes
-    // every few metres (Jollibee → BDO → a cinema) as the browser's reading
-    // drifts on each refresh, though the visitor hasn't moved. A road feature
-    // has no `street`, so its `name` (the road) is used then.
-    const primary = feature.street || feature.name;
-    if (primary) parts.push(primary);
-    if (feature.locality && !parts.includes(feature.locality)) parts.push(feature.locality); // barangay / suburb
-    if (feature.district && !parts.includes(feature.district)) parts.push(feature.district); // Poblacion, Buhangin…
-    if (feature.city && !parts.includes(feature.city)) parts.push(feature.city);
-    if (parts.length === 0) return null;
-    return {
-      address: parts.join(', '),
-      district: feature.district || feature.locality || feature.city || 'Davao City',
-      street: feature.street || feature.name,
-    };
-  } catch {
-    return null;
+/** "Street, Barangay, District, City" with blanks and repeats left out. */
+function joinAddress(...parts: (string | undefined)[]): string {
+  const out: string[] = [];
+  for (const p of parts) {
+    const v = p?.trim();
+    if (v && !out.includes(v)) out.push(v);
   }
+  return out.join(', ');
 }
-
-// Nominatim (OSM): usually faster here, but a longer display name.
-async function nominatimReverse(lat: number, lng: number): Promise<GeocodeResult | null> {
-  try {
-    const res = await fetch(
-      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}`,
-      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) },
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    if (!data?.display_name) return null;
-    // Same rule as Photon: drop a leading shop/landmark name so the label
-    // starts with the street and doesn't change with small GPS drift.
-    const display: string = data.name && data.address?.road && data.display_name.startsWith(`${data.name}, `)
-      ? data.display_name.slice(data.name.length + 2)
-      : data.display_name;
-    return {
-      address: display,
-      district:
-        data?.address?.suburb ||
-        data?.address?.neighbourhood ||
-        data?.address?.city_district ||
-        data?.address?.city ||
-        'Davao City',
-      street: data?.address?.road,
-    };
-  } catch {
-    return null;
-  }
-}
-
-// BigDataCloud's keyless client endpoint: no street, but the district and
-// city ("Poblacion, Davao City"). Used only when Photon and Nominatim both
-// fail — Nominatim rate-limits busy connections (429) and Photon has outages.
-async function bigDataCloudReverse(lat: number, lng: number): Promise<GeocodeResult | null> {
-  try {
-    const res = await fetch(
-      `https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`,
-      { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) },
-    );
-    if (!res.ok) return null;
-    const data = await res.json();
-    const admin: { name?: string; adminLevel?: number }[] = data?.localityInfo?.administrative ?? [];
-    // Deepest named area below the city (adminLevel 8+: district / barangay).
-    const area = [...admin].reverse().find((a) => (a.adminLevel ?? 0) >= 8 && a.name)?.name;
-    const city = data?.city === 'Davao' ? 'Davao City' : data?.city || data?.locality;
-    const parts = [area, city].filter((p): p is string => !!p);
-    if (parts.length === 0) return null;
-    return { address: parts.join(', '), district: area || city || 'Davao City' };
-  } catch {
-    return null;
-  }
-}
-
-const PREFER_PHOTON_MS = 1500;
-
-// The picker asks for the same spot twice (once when it jumps there, once when
-// the map stops moving): share one lookup per ~1 m spot, and remember answers,
-// so the free services see half the traffic and rate-limit us less.
-const reverseCache = new Map<string, Promise<GeocodeResult | null>>();
 
 /**
- * Coordinates → a human-readable address with the street name. Asks Photon
- * and Nominatim at the same time: Photon's shorter label wins if it answers
- * within 1.5 s, otherwise whichever answers first. If both fail, BigDataCloud
- * gives the district and city. Coordinates as the label only when all three
- * fail (offline).
+ * Reverse geocodes coordinates to "Street, Barangay, District, Davao City".
+ *
+ * Asks for the nearest STREET, never the nearest object. The old lookup took OpenStreetMap's nearest thing of any
+ * kind, which near a home is usually a hotel, school or shop — so a person on Jasmin Street was told they were at
+ * "Citistyle Inn, Rafael Castillo" (the inn's own street and barangay, a block away). Photon (OSM / Komoot) first,
+ * restricted to the street layer; Nominatim at street zoom (17) as fallback; raw coordinates last.
  */
 export async function reverseGeocodeCoords(lat: number, lng: number): Promise<GeocodeResult> {
-  const key = `${lat.toFixed(5)},${lng.toFixed(5)}`;
-  let lookup = reverseCache.get(key);
-  if (!lookup) {
-    lookup = lookupAddress(lat, lng);
-    reverseCache.set(key, lookup);
-    // Don't remember a failure: the next try may get through.
-    void lookup.then((r) => { if (!r) reverseCache.delete(key); });
+  // Strategy 1: Photon, nearest street only.
+  try {
+    const res = await fetch(`https://photon.komoot.io/reverse?lat=${lat}&lon=${lng}&layer=street&limit=1`, {
+      headers: { Accept: 'application/json' },
+    });
+    if (res.ok) {
+      const data = await res.json();
+      const p = data?.features?.[0]?.properties;
+      if (p?.name) {
+        const district = cleanDistrict(p.district);
+        return {
+          address: joinAddress(p.name, p.locality, district, p.city || 'Davao City'),
+          district: district || p.locality || p.city || 'Davao City',
+          street: p.name,
+        };
+      }
+    }
+  } catch {
+    // Continue to fallback
   }
-  const result = await lookup;
-  return result ?? { address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`, district: 'Davao City' };
+
+  // Strategy 2: Nominatim at zoom 17 ("major and minor streets"), built from the address parts, not display_name
+  // (which starts with whatever building or shop is nearest).
+  try {
+    const res = await fetch(
+      `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${lat}&lon=${lng}&zoom=17&addressdetails=1`,
+      { headers: { Accept: 'application/json' } }
+    );
+    if (res.ok) {
+      const data = await res.json();
+      const a = data?.address;
+      if (a) {
+        const barangay = a.quarter || a.neighbourhood || a.village;
+        const district = cleanDistrict(a.suburb || a.city_district);
+        const address = joinAddress(a.road, barangay, district, a.city || 'Davao City');
+        if (address) {
+          return { address, district: district || barangay || a.city || 'Davao City', street: a.road };
+        }
+      }
+    }
+  } catch {
+    // Continue to final fallback
+  }
+
+  // Strategy 3 (same as Bongo's): BigDataCloud's keyless client endpoint. No street, but the district and city
+  // ("Poblacion, Davao City") when Photon and Nominatim both fail (Nominatim rate-limits busy connections, Photon has outages).
+  try {
+    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+    if (res.ok) {
+      const data = await res.json();
+      const admin: { name?: string; adminLevel?: number }[] = data?.localityInfo?.administrative ?? [];
+      // Deepest named area below the city (adminLevel 8+: district / barangay).
+      const area = [...admin].reverse().find((x) => (x.adminLevel ?? 0) >= 8 && x.name)?.name;
+      const city = data?.city === 'Davao' ? 'Davao City' : data?.city || data?.locality;
+      const address = joinAddress(area, city);
+      if (address) return { address, district: cleanDistrict(area) || city || 'Davao City' };
+    }
+  } catch {
+    // Continue to final fallback
+  }
+
+  // Strategy 4: Coordinates fallback when offline or unavailable
+  return {
+    address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
+    district: 'Davao City',
+  };
 }
 
-async function lookupAddress(lat: number, lng: number): Promise<GeocodeResult | null> {
-  const photon = photonReverse(lat, lng);
-  const nominatim = nominatimReverse(lat, lng);
-
-  const quickPhoton = await Promise.race([
-    photon,
-    new Promise<null>((r) => setTimeout(() => r(null), PREFER_PHOTON_MS)),
-  ]);
-  const result =
-    quickPhoton ??
-    // First non-null of the two; null only when both came back empty.
-    (await new Promise<GeocodeResult | null>((resolve) => {
-      let pending = 2;
-      const take = (r: GeocodeResult | null) => {
-        if (r) resolve(r);
-        else if (--pending === 0) resolve(null);
-      };
-      void photon.then(take);
-      void nominatim.then(take);
-    }));
-
-  return result ?? bigDataCloudReverse(lat, lng);
-}
-
-export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+async function singleQueryPlaces(query: string): Promise<PlaceSearchResult[]> {
   const trimmed = query.trim();
   if (!trimmed) return [];
 
   // Strategy 1: Photon search biased to Davao City (7.0707, 125.6083)
   try {
     const res = await fetch(
-      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&limit=8`,
-      { headers: { Accept: 'application/json' }, signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
+      `https://photon.komoot.io/api/?q=${encodeURIComponent(trimmed)}&lat=7.0707&lon=125.6083&limit=6`,
+      { headers: { Accept: 'application/json' } }
     );
     if (res.ok) {
       const data = await res.json();
@@ -171,7 +120,10 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
             const primary = p.name || p.street;
             if (primary) parts.push(primary);
             if (p.locality && !parts.includes(p.locality)) parts.push(p.locality);
-            if (p.district && !parts.includes(p.district)) parts.push(p.district);
+            if (p.district) {
+              const clean = p.district.replace(/\s+district$/i, '').trim();
+              if (clean && !parts.includes(clean)) parts.push(clean);
+            }
             if (p.city && !parts.includes(p.city)) parts.push(p.city);
 
             const display_name = parts.join(', ');
@@ -198,8 +150,7 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
     const res = await fetch(
       `https://nominatim.openstreetmap.org/search?format=jsonv2&q=${encodeURIComponent(
         queryText
-      )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=8&countrycodes=ph`,
-      { signal: AbortSignal.timeout(LOOKUP_TIMEOUT_MS) }
+      )}&viewbox=125.30,7.40,125.80,6.85&bounded=1&limit=6&countrycodes=ph`
     );
     if (res.ok) {
       const data = await res.json();
@@ -213,6 +164,90 @@ export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearc
     }
   } catch {
     // Fallback
+  }
+
+  return [];
+}
+
+function normalizeStreetAbbrev(text: string): string {
+  return text
+    .replace(/\bste\.?\b/gi, 'Street')
+    .replace(/\bst\.?\b/gi, 'Street')
+    .replace(/\bave\.?\b/gi, 'Avenue')
+    .replace(/\bblvd\.?\b/gi, 'Boulevard')
+    .replace(/\brd\.?\b/gi, 'Road')
+    .replace(/\bext\.?\b/gi, 'Extension')
+    .replace(/\bbrgy\.?\b/gi, 'Barangay')
+    .replace(/\bbgy\.?\b/gi, 'Barangay')
+    .replace(/\s+/g, ' ')
+    .trim();
+}
+
+/**
+ * Searches places around Davao City.
+ * Biased towards Davao City coordinates to return relevant streets and landmarks.
+ * Automatically handles multi-segment queries like "Washington ste. Front of almendras gym, Davao City".
+ */
+export async function searchPlacesAroundDavao(query: string): Promise<PlaceSearchResult[]> {
+  const trimmed = query.trim();
+  if (!trimmed) return [];
+
+  // First try direct search
+  const directResults = await singleQueryPlaces(trimmed);
+  if (directResults.length > 0) {
+    return directResults;
+  }
+
+  // Also try normalized street abbreviations directly
+  const normalizedDirect = normalizeStreetAbbrev(trimmed);
+  if (normalizedDirect !== trimmed) {
+    const hits = await singleQueryPlaces(normalizedDirect);
+    if (hits.length > 0) return hits;
+  }
+
+  // Check if query contains connective segments (e.g. "Front of", "near", "beside", "corner")
+  const connectorPattern =
+    /\b(?:in\s*front\s*of|infront\s*of|front\s*of|fronting|ahead\s*of|near(?:\s*by|\s*to)?|beside|next\s*to|across(?:\s*from)?|opposite(?:\s*to)?|opp\.?|corner|cor\.?|along|at\s*the\s*back\s*of|back\s*of|behind|adjacent\s*to|around|outside|inside|close\s*to|between)\b/gi;
+
+  let rawSegments: string[] = [];
+  if (connectorPattern.test(trimmed)) {
+    rawSegments = trimmed.split(connectorPattern);
+  } else if (/[,;]+/.test(trimmed)) {
+    rawSegments = trimmed.split(/[,;]+/);
+  }
+
+  if (rawSegments.length > 0) {
+    const cleanSegments = rawSegments
+      .map((s) =>
+        s
+          .trim()
+          .replace(/^[,\s.-]+|[,\s.-]+$/g, '')
+          .replace(/,\s*davao(?:\s*(?:city|del\s*sur))?.*$/i, '')
+          .trim()
+      )
+      .filter((s) => s.length >= 2 && !/^(?:davao|davao city|philippines)$/i.test(s));
+
+    const combined: PlaceSearchResult[] = [];
+    const seen = new Set<string>();
+
+    for (const rawSeg of cleanSegments) {
+      const candidates = [rawSeg, normalizeStreetAbbrev(rawSeg)];
+      for (const cand of candidates) {
+        const hits = await singleQueryPlaces(cand);
+        for (const hit of hits) {
+          const key = `${hit.lat.toFixed(4)},${hit.lng.toFixed(4)}`;
+          if (!seen.has(key)) {
+            seen.add(key);
+            combined.push(hit);
+          }
+        }
+        if (combined.length >= 8) break;
+      }
+    }
+
+    if (combined.length > 0) {
+      return combined.slice(0, 8);
+    }
   }
 
   return [];

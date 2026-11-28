@@ -1,0 +1,65 @@
+export type ShopStatusFilter = 'all' | 'open' | 'closed';
+
+/** radiusKm null = Auto: nearest first with no distance cut-off. */
+export interface NearFilters {
+  radiusKm: number | null;
+  status: ShopStatusFilter;
+}
+
+// All shops by default: "open now only" hid every shop at night (each card already says Open or Closed).
+export const DEFAULT_NEAR_FILTERS: NearFilters = { radiusKm: null, status: 'all' };
+
+/** 50 km from the city centre covers the whole of Davao City, so the slider stops there. */
+export const MIN_RADIUS_KM = 5;
+export const MAX_RADIUS_KM = 50;
+export const RADIUS_STEP_KM = 5;
+export const DEFAULT_RADIUS_KM = 10;
+
+export function activeFilterCount(f: NearFilters): number {
+  return (f.radiusKm !== null ? 1 : 0) + (f.status !== 'all' ? 1 : 0);
+}
+
+/** `?radius_km=` from a URL; anything that is not a positive number means Auto. */
+export function parseRadiusKm(value: string | null): number | null {
+  const n = Number(value);
+  return value && Number.isFinite(n) && n > 0 ? n : null;
+}
+
+/** `?open=open|closed` from a URL; anything else means all shops. */
+export function parseStatusFilter(value: string | null): ShopStatusFilter {
+  return value === 'open' || value === 'closed' ? value : 'all';
+}
+
+/** The extra filters on the search screen (the ones that used to be in the filter drawer, without Department). */
+export interface MoreFilters {
+  minPrice: string;
+  maxPrice: string;
+  minRating: string;
+  /** A Davao province (PSGC code), '' = all provinces. */
+  province: string;
+  /** A city or municipality of `province` (PSGC code), '' = the whole province. */
+  city: string;
+  /** One of Davao City's 11 districts (only with Davao City). */
+  district: string;
+  /** An official barangay of `district` (davaoLocations.ts). */
+  barangay: string;
+  /** A street / landmark of `district`: its `match` spellings (davaoAreas.ts), searched in the shops' addresses. */
+  area: string;
+  /** price_asc | price_desc | '' */
+  sortBy: string;
+  /** A garment category key (garmentTaxonomy), '' = all shops. Shown as the chips on the landing page. */
+  category?: string;
+}
+
+export const DEFAULT_MORE_FILTERS: MoreFilters = { minPrice: '', maxPrice: '', minRating: '', province: '', city: '', district: '', barangay: '', area: '', sortBy: 'price_asc', category: '' };
+
+export type AllFilters = NearFilters & MoreFilters;
+
+export const DEFAULT_ALL_FILTERS: AllFilters = { ...DEFAULT_NEAR_FILTERS, ...DEFAULT_MORE_FILTERS };
+
+/** How many filters are on, for the dot on the filter icon. */
+export function countAllFilters(f: NearFilters & Partial<MoreFilters>): number {
+  // The default sort (price, low to high) is not a filter the person turned on: it does not light the dot.
+  const sorted = !!f.sortBy && f.sortBy !== DEFAULT_MORE_FILTERS.sortBy;
+  return activeFilterCount(f) + (f.minPrice || f.maxPrice || sorted ? 1 : 0) + (f.minRating ? 1 : 0) + (f.province || f.city || f.district ? 1 : 0);
+}

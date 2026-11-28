@@ -36,8 +36,8 @@ export default function AdminShopsMap({ pins }: { readonly pins: ShopPin[] }) {
         <Marker
           key={p.key}
           position={[p.latitude, p.longitude]}
-          // Same pin as the public /map: main shop = larger pin with the shop name, branch = smaller pin with the branch name.
-          icon={buildStorePinIcon(p.logo_path, p.is_main, isStoreOpen(p.operating_hours), false, false, p.is_main ? p.name : (p.branch_name || p.name), planRing(p.plan_slug))}
+          // Same pin as the public /map, labelled with the shop (or branch) name, its ring in the plan's colour.
+          icon={buildStorePinIcon(p.logo_path, p.is_main ? p.name : (p.branch_name || p.name), isStoreOpen(p.operating_hours), false, false, planRing(p.plan_slug))}
           title={p.is_main ? p.name : `${p.name} · ${p.branch_name ?? 'Branch'}`}
         >
           <Popup>

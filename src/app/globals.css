@@ -969,3 +969,16 @@ label:has(> input[type="file"].sr-only) {
 @media (prefers-reduced-motion: reduce) {
   [data-attention] { animation: none; }
 }
+
+/* ── Map (/search): styles its components use ─────────────────────────────
+   Soft card: white, hairline edge, a very light lift and a generous radius. */
+.card-soft {
+  background: var(--card-bg);
+  border: 1px solid rgba(235, 230, 224, 0.7);
+  border-radius: 20px;
+  box-shadow: 0 1px 2px rgba(45, 42, 38, 0.04), 0 8px 24px rgba(45, 42, 38, 0.05);
+}
+/* Room the floating FeatureNav takes at the bottom: the map's buttons and the phone bottom sheet stay above it. */
+:root { --bottom-nav-space: calc(var(--fnav-h) + 8px); }
+/* Width of a centred content column (the map's recent-searches screen). */
+:root { --col-w: 640px; }

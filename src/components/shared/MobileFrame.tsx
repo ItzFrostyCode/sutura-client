@@ -29,7 +29,8 @@ export default function MobileFrame({ children }: { readonly children: React.Rea
 
   if (isDashboard) return <>{children}</>;
 
-  if (pathname === '/map') {
+  // Full screen for the map: /search is the map with its list, /map is "Choose on map".
+  if (pathname === '/map' || pathname?.startsWith('/search')) {
     return (
       <div
         id="mobile-frame-container"

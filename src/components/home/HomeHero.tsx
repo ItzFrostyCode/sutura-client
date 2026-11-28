@@ -6,11 +6,19 @@ import HeroSearch from './HeroSearch';
 interface HomeHeroProps {
   heroSearch: string;
   onSearchChange: (val: string) => void;
+  /** Search button / Enter: opens the Map (/search) with the text and the filters picked. */
+  onSubmit: (e: React.FormEvent) => void;
+  /** The filter button: opens the filter sheet (area, distance, open now, price, rating, sort). */
+  onOpenFilter: () => void;
+  activeFilterCount: number;
 }
 
 export default function HomeHero({
   heroSearch,
   onSearchChange,
+  onSubmit,
+  onOpenFilter,
+  activeFilterCount,
 }: HomeHeroProps) {
   return (
     // Only the photo is clipped (not the section), and the section sits above
@@ -38,7 +46,10 @@ export default function HomeHero({
           Find local shops, store your measurements, and follow your order&rsquo;s progress.
         </p>
 
-        <HeroSearch value={heroSearch} onChange={onSearchChange} />
+        {/* Search box + filter button + Search button (same bar as the Map's search). */}
+        <div className="mx-auto w-full max-w-2xl text-left">
+          <HeroSearch value={heroSearch} onChange={onSearchChange} onSubmit={onSubmit} onOpenFilter={onOpenFilter} activeFilterCount={activeFilterCount} />
+        </div>
 
         <p className="mt-3 text-xs sm:text-sm text-white/85">
           Search by Location, Specialty, or Custom Garments in Davao City

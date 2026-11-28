@@ -18,7 +18,8 @@ const FEATURES: { label: string; href: string; icon: LucideIcon }[] = [
   { label: 'About', href: '/#about', icon: Info },
 ];
 
-const isActive = (pathname: string, href: string) => !href.includes('#') && (pathname === href || pathname.startsWith(`${href}/`));
+// The map is /search now (/map only redirects there, or is "Choose on map"), so Map lights up there too.
+const isActive = (pathname: string, href: string) => !href.includes('#') && (pathname === href || pathname.startsWith(`${href}/`) || (href === '/map' && pathname.startsWith('/search')));
 
 /** Fixed bottom bar, so it can render anywhere in the tree. */
 export default function FeatureNav() {

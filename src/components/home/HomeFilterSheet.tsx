@@ -1,0 +1,56 @@
+'use client';
+
+import { useEffect, useState } from 'react';
+import HomeSheet from './HomeSheet';
+import FilterDistance from './filter/FilterDistance';
+import FilterMore from './filter/FilterMore';
+import FilterShopLights from './filter/FilterShopLights';
+import FilterLocation from './filter/FilterLocation';
+import { DEFAULT_ALL_FILTERS, type AllFilters, type MoreFilters, type NearFilters } from './homeFilters';
+
+interface HomeFilterSheetProps {
+  readonly isOpen: boolean;
+  readonly onClose: () => void;
+  readonly value: NearFilters & Partial<MoreFilters>;
+  /** Also show price, rating and district. Defaults to true for consistency between landing and search screens. */
+  readonly showMore?: boolean;
+  readonly onApply: (filters: AllFilters) => void;
+  /** The Map: where shops are measured from (its top strip is left out there), first in the pop-up. */
+  readonly showLocation?: boolean;
+}
+
+/** The filter pop-up: Distance, Open / Closed lights, and price, rating, and district filters. */
+export default function HomeFilterSheet({ isOpen, onClose, value, showMore = true, onApply, showLocation = false }: HomeFilterSheetProps) {
+  const [draft, setDraft] = useState<AllFilters>({ ...DEFAULT_ALL_FILTERS, ...value });
+  useEffect(() => { if (isOpen) setDraft({ ...DEFAULT_ALL_FILTERS, ...value }); }, [isOpen, value]);
+
+  return (
+    <HomeSheet
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Filter"
+      footer={(
+        <div className="flex gap-3">
+          <button type="button" onClick={() => setDraft(DEFAULT_ALL_FILTERS)} className="h-[52px] flex-1 rounded-full bg-sunken text-ink transition-colors hover:bg-sunken-hover">Reset</button>
+          <button type="button" onClick={() => { onApply(draft); onClose(); }} className="h-[52px] flex-1 rounded-full bg-ink font-semibold text-white transition-colors hover:bg-taupe">Apply</button>
+        </div>
+      )}
+    >
+      {showLocation && <FilterLocation />}
+
+      {/* Distance */}
+      <section className={showLocation ? 'mt-6' : ''}>
+        <h3 className="mobile-h4 mb-3 text-ink">Distance</h3>
+        <FilterDistance radiusKm={draft.radiusKm} onChange={(radiusKm) => setDraft({ ...draft, radiusKm })} />
+      </section>
+
+      {/* Shop */}
+      <section className="mt-6">
+        <h3 className="mobile-h4 mb-3 text-ink">Shop</h3>
+        <FilterShopLights value={draft.status} onChange={(status) => setDraft({ ...draft, status })} />
+      </section>
+
+      {showMore && <FilterMore value={draft} onChange={(more) => setDraft({ ...draft, ...more })} />}
+    </HomeSheet>
+  );
+}

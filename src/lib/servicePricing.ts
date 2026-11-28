@@ -21,3 +21,18 @@ export function isQuoteBasedService(basePrice: string | number | null | undefine
   const amount = Number(basePrice);
   return !Number.isFinite(amount) || amount <= 0;
 }
+
+/** How a service shows its price (B6-O11): one of three, never a range. Older rows without it read as Starting. */
+export type PriceDisplay = 'fixed' | 'starting' | 'quotation';
+
+/** The words before the amount: "From " for a starting price, nothing for a fixed price. */
+export function priceLead(display?: PriceDisplay | null): string {
+  return display === 'fixed' ? '' : 'From ';
+}
+
+/** True when the customer should see "Price after quotation" instead of an amount. */
+export function showsQuotation(display?: PriceDisplay | null, basePrice?: string | number | null): boolean {
+  return display === 'quotation' || isQuoteBasedService(basePrice);
+}
+
+export const QUOTATION_LABEL = 'Price after quotation';

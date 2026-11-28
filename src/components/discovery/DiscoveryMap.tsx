@@ -1,15 +1,17 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { MapContainer, TileLayer, Marker, Popup, useMap, useMapEvents } from 'react-leaflet';
-import RouteLayer from '@/components/map/RouteLayer';
+import { useEffect, useMemo, useRef } from 'react';
+import { MapContainer, TileLayer, Marker, Polyline, Popup, useMap, useMapEvents } from 'react-leaflet';
 import type { Map as LeafletMap } from 'leaflet';
 import L from '@/lib/leafletSafe';
 import 'leaflet/dist/leaflet.css';
 import Link from 'next/link';
 import { getMediaUrl } from '@/lib/media';
 import { useGuestGatedHref } from '@/hooks/useGuestGatedHref';
-import { formatAddress } from '@/lib/formatAddress';
+import YouMarker from './YouMarker';
+import DistrictHighlight from './DistrictHighlight';
+import { focusOn } from '@/lib/mapFocus';
+import ClusteredPins from './ClusteredPins';
 
 // Generic fallback pin — same inline store SVG used when a store has no
 // logo on file, kept visually close to BranchesMap.tsx's own pin so it
@@ -22,80 +24,14 @@ const FALLBACK_SVG = '<svg xmlns="http://www.w3.org/2000/svg" width="18" height=
 // unreadable; a recognizable logo lets a visitor tell stores apart at a
 // glance the way real map apps (Google/Waze business pins) do. A crisp dark ring
 // + "MAIN" badge marks a store's main branch versus a satellite branch.
-// `selected` (Find a Branch's chosen branch): taupe ring, drawn a size up.
-// Main store vs branch, told apart at a glance: main = larger pin with a
-// deep-brown ring and a dark name tag with a small star; branch = standard
-// pin with a taupe ring and a light name tag with a dot. The tag shows the
-// shop's name for a main shop and the branch's own name for a branch
-// (pinName), cut to 120px with the full name on hover. `bounce` plays a one-shot hop (pin-bounce in
-// globals.css) when the icon mounts — used for the hovered/selected pin.
-const PIN_THEME = {
-  main: { size: 42, ring: '#2E1C14', tagBg: '#2E1C14', tagFg: '#FFFFFF', tagBorder: '#FFFFFF', tag: 'Main shop' },
-  branch: { size: 36, ring: '#8D7B68', tagBg: '#F3EEE8', tagFg: '#5E4E40', tagBorder: '#8D7B68', tag: 'Branch' },
-} as const;
-
-// Shop and branch names are typed in by owners and go into the pin's raw
-// HTML, so they are escaped first.
-const escapeHtml = (text: string) => text.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c] ?? c);
-const STAR_SVG = '<svg width="8" height="8" viewBox="0 0 24 24" fill="#D9A441" aria-hidden="true" style="flex-shrink:0"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>';
-const DOT_HTML = '<span aria-hidden="true" style="flex-shrink:0;width:5px;height:5px;border-radius:50%;background:#8D7B68"></span>';
-
-// `ringColor` swaps the ring + tail colour (the admin Shops map colours it by plan); omitted, the theme's own ring is used.
-export function buildStorePinIcon(logoPath: string | null, isMain: boolean, isOpen?: boolean, selected = false, bounce = false, label?: string, ringColor?: string): L.DivIcon {
-  const theme = PIN_THEME[isMain ? 'main' : 'branch'];
-  const t = ringColor ? { ...theme, ring: ringColor } : theme;
-  const name = escapeHtml((label ?? '').trim() || t.tag);
-  const tail = 11;
-  const h = t.size + tail;
-  const statusColor = isOpen ? '#22c55e' : '#ef4444';
-  const logoHtml = logoPath
-    ? `<img src="${getMediaUrl(logoPath)}" alt="" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
-    : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`;
-  // Selected: a white gap then a second ring in the pin's own colour.
-  const shadow = selected
-    ? `0 0 0 2px #fff,0 0 0 4px ${t.ring},0 4px 12px rgba(45,42,38,0.45)`
-    : '0 2px 6px rgba(45,42,38,0.45)';
-
-  const html = `
-    <div class="${bounce ? 'pin-bounce' : ''}" style="position:relative;width:${t.size}px;height:${h}px;">
-      <div style="position:relative;width:100%;height:100%;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
-        <div style="width:${t.size}px;height:${t.size}px;border-radius:50%;overflow:hidden;border:3px solid ${t.ring};box-shadow:${shadow};background:#fff;">
-          ${logoHtml}
-        </div>
-        <div style="position:absolute;bottom:1px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:${tail - 1}px solid ${t.ring};"></div>
-        <span style="position:absolute;bottom:${tail}px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Open now' : 'Closed now'}"></span>
-        <span title="${name}" style="position:absolute;top:-11px;left:50%;transform:translateX(-50%);display:inline-flex;align-items:center;gap:3px;max-width:120px;white-space:nowrap;background:${t.tagBg};color:${t.tagFg};font:700 9px/1 var(--font-outfit),system-ui,sans-serif;padding:3px 6px;border-radius:9999px;border:1.5px solid ${t.tagBorder};box-shadow:0 1px 3px rgba(0,0,0,0.25);z-index:11;">${isMain ? STAR_SVG : DOT_HTML}<span style="overflow:hidden;text-overflow:ellipsis;">${name}</span></span>
-      </div>
-    </div>
-  `;
-
-  return L.divIcon({
-    className: '',
-    html,
-    iconSize: [t.size, h],
-    iconAnchor: [t.size / 2, h],
-    popupAnchor: [0, -h + 4],
-  });
-}
-
-// "You are here": pulsing ring, solid blue dot, and a dark label pinned
-// above it (styles: .you-marker in globals.css). The 48px box is anchored at
-// its centre, so the dot sits exactly on the position at every zoom.
-const YOU_PIN_SVG = '<svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 10c0 6-8 12-8 12s-8-6-8-12a8 8 0 0 1 16 0Z"/><circle cx="12" cy="10" r="3"/></svg>';
-export const userLocationIcon = L.divIcon({
-  className: '',
-  html: `<div class="you-marker" role="img" aria-label="You are here"><span class="you-marker__ring"></span><span class="you-marker__dot"></span><span class="you-marker__label">${YOU_PIN_SVG}You are here</span></div>`,
-  iconSize: [48, 48],
-  iconAnchor: [24, 24],
-});
-
-/** Above every shop pin, including the selected one (1000). */
+// `selected` (the branch picked on the catalog item's Find-in-store map): a taupe ring and a little larger.
+/** Above every shop pin, including the selected one (1000). Used by the team lead's profile map (FindLocationMap). */
 export const USER_MARKER_Z = 2000;
 
-// Navigation arrow (lucide "navigation"), filled — distinct from /map's target-icon near-me toggle.
+// Navigation arrow (lucide "navigation"), filled.
 const LOCATE_SVG = '<svg width="19" height="19" viewBox="0 0 24 24" fill="currentColor" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><polygon points="3 11 22 2 13 21 11 13 3 11"/></svg>';
 
-/** Leaflet control (top-right) that flies the map back to the visitor. */
+/** Leaflet control (top-right) that flies the map back to the visitor (the team lead's profile map uses it). */
 export function RecenterControl({ position }: { readonly position: { lat: number; lng: number } }) {
   const map = useMap();
   const posRef = useRef(position);
@@ -122,10 +58,88 @@ export function RecenterControl({ position }: { readonly position: { lat: number
   return null;
 }
 
-function FitBounds({ points, disable }: { readonly points: [number, number][]; readonly disable?: boolean }) {
+export function buildStorePinIcon(
+  logoPath: string | null,
+  badgeTextOrIsMain?: string | boolean | null,
+  isOpen?: boolean,
+  selected = false,
+  bounce = false,
+  /** A ring colour of the caller's own (the admin shops map colours it by plan). */
+  ring?: string,
+): L.DivIcon {
+  const ringColor = ring ?? (selected ? '#9A8073' : '#2D2A26');
+  const statusColor = isOpen ? '#22c55e' : '#ef4444';
+  const logoHtml = logoPath
+    ? `<img src="${getMediaUrl(logoPath)}" style="width:100%;height:100%;object-fit:cover;" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';" /><span style="display:none;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`
+    : `<span style="display:flex;width:100%;height:100%;align-items:center;justify-content:center;background:#FAF6F3;">${FALLBACK_SVG}</span>`;
+
+  let badge: string | null = null;
+  if (typeof badgeTextOrIsMain === 'string') {
+    badge = badgeTextOrIsMain.trim() || null;
+  } else if (badgeTextOrIsMain === true) {
+    badge = 'MAIN';
+  }
+
+  const isMainBadge = badge === 'MAIN';
+  const badgeHtml = badge
+    ? `<span style="position:absolute;top:-4px;right:-7px;background:${isMainBadge ? '#2D2A26' : '#8A7063'};color:#fff;font-size:11px;font-weight:700;line-height:1;letter-spacing:0.02em;${isMainBadge ? 'padding:2px 5px;border-radius:6px;' : 'width:19px;height:19px;border-radius:9999px;display:inline-flex;align-items:center;justify-content:center;'}border:1.5px solid #fff;z-index:11;box-shadow:0 1px 4px rgba(0,0,0,0.35);">${badge}</span>`
+    : '';
+
+  const html = `
+    <div class="${bounce ? 'pin-bounce' : ''}" style="position:relative;width:40px;height:52px;">
+    <div style="position:relative;width:40px;height:52px;transform-origin:50% 100%;transform:scale(${selected ? 1.15 : 1});">
+      <div style="width:40px;height:40px;border-radius:50%;overflow:hidden;border:3px solid ${ringColor};box-shadow:0 2px 6px rgba(45,42,38,0.45);background:#fff;">
+        ${logoHtml}
+      </div>
+      <div style="position:absolute;bottom:2px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:7px solid transparent;border-right:7px solid transparent;border-top:9px solid ${ringColor};"></div>
+      
+      <!-- Online (Green) / Offline (Red) Indicator -->
+      <span style="position:absolute;bottom:10px;right:-2px;width:12px;height:12px;border-radius:50%;background:${statusColor};border:2px solid #fff;box-shadow:0 1px 3px rgba(0,0,0,0.35);z-index:10;" title="${isOpen ? 'Online (Open now)' : 'Offline (Closed now)'}"></span>
+
+      ${badgeHtml}
+    </div>
+    </div>
+  `;
+
+  return L.divIcon({
+    className: '',
+    html,
+    iconSize: [40, 52],
+    iconAnchor: [20, 52],
+    popupAnchor: [0, -48],
+  });
+}
+
+/** A small "you are here" dot, for maps without the full You marker (the catalog item's Find-in-store map). */
+export const userLocationIcon = L.divIcon({
+  className: '',
+  html: '<span style="position:relative;display:block;width:16px;height:16px;"><span style="position:absolute;inset:0;border-radius:9999px;background:#3B82F6;opacity:0.35;animation:sutura-pulse 1.8s ease-out infinite;"></span><span style="position:absolute;inset:3px;border-radius:9999px;background:#3B82F6;border:2px solid white;"></span></span><style>@keyframes sutura-pulse{0%{transform:scale(0.6);opacity:0.6;}100%{transform:scale(2.2);opacity:0;}}</style>',
+  iconSize: [16, 16],
+  iconAnchor: [8, 8],
+});
+
+// Leaflet re-creates a pin whenever its icon object changes, and the live navigation re-renders the map about once a second,
+// so an icon is built once per look (logo, badge, open, selected) and reused. Because it is reused, the selected pin's
+// one-shot hop (pin-bounce in globals.css) plays only when it becomes selected, not on every re-render.
+const pinIcons = new Map<string, L.DivIcon>();
+function pinIcon(logoPath: string | null, badgeText?: string | boolean | null, isOpen?: boolean, selected = false): L.DivIcon {
+  const key = `${logoPath ?? ''}|${badgeText ?? ''}|${isOpen}|${selected}`;
+  let icon = pinIcons.get(key);
+  if (!icon) {
+    icon = buildStorePinIcon(logoPath, badgeText, isOpen, selected, selected);
+    pinIcons.set(key, icon);
+  }
+  return icon;
+}
+
+export interface FitPadding { readonly top?: number; readonly left?: number; readonly bottom?: number }
+
+function FitBounds({ points, disable, pad }: { readonly points: [number, number][]; readonly disable?: boolean; readonly pad?: FitPadding }) {
   const map = useMap();
   const prevKeyRef = useRef<string>('');
   const pointsKey = points.map((p) => `${p[0].toFixed(4)},${p[1].toFixed(4)}`).join('|');
+  // The free area changes when a panel or sheet moves, so the fit is redone for a new padding as well.
+  const padKey = `${pad?.top ?? 0}|${pad?.left ?? 0}|${pad?.bottom ?? 0}`;
 
   useEffect(() => {
     return () => {
@@ -138,135 +152,66 @@ function FitBounds({ points, disable }: { readonly points: [number, number][]; r
   }, [map]);
 
   useEffect(() => {
-    if (disable || !pointsKey) return;
-    if (prevKeyRef.current === pointsKey) return;
-    prevKeyRef.current = pointsKey;
+    if (!pointsKey) return;
+    const fitKey = `${pointsKey}#${padKey}`;
+    if (prevKeyRef.current === fitKey) return;
+    // A fit that is switched off still counts as seen, so switching it back on does not suddenly zoom out to the pins.
+    prevKeyRef.current = fitKey;
+    if (disable) return;
 
+    const top = pad?.top ?? 0;
+    const left = pad?.left ?? 0;
+    const bottom = pad?.bottom ?? 0;
     if (points.length === 1) {
-      map.setView(points[0], 14);
+      // One place: zoom in to it (street level), in the part of the map that is not covered.
+      focusOn(map, points[0][0], points[0][1], { left, top, bottom }, false);
     } else if (points.length > 1) {
-      map.fitBounds(points, { padding: [40, 40] });
+      map.fitBounds(points, { paddingTopLeft: [40 + left, 40 + top], paddingBottomRight: [40, 40 + bottom] });
     }
-  }, [map, points, pointsKey, disable]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- refit only when the pins or the free area change
+  }, [map, points, pointsKey, padKey, disable]);
   return null;
 }
 
-// Count bubble for a group of nearby branches (Tailor Locator clustering).
-function buildClusterIcon(count: number): L.DivIcon {
-  const size = count < 5 ? 40 : count < 20 ? 46 : 54;
-  return L.divIcon({
-    className: '',
-    html: `<div style="width:${size}px;height:${size}px;border-radius:50%;background:#6B4E3E;border:3px solid #fff;box-shadow:0 3px 10px rgba(45,42,38,0.35);display:flex;align-items:center;justify-content:center;color:#fff;font-weight:700;font-size:${count < 100 ? 15 : 13}px;font-family:inherit;">${count}</div>`,
-    iconSize: [size, size],
-    iconAnchor: [size / 2, size / 2],
-  });
+/** "Focus on me": the map stays centred on the person at street level (in the part not under a panel or sheet) until they drag it. */
+function FocusOnUser({ position, pad, active }: { readonly position: { lat: number; lng: number } | null; readonly pad?: FitPadding; readonly active: boolean }) {
+  const map = useMap();
+  const left = pad?.left ?? 0;
+  const top = pad?.top ?? 0;
+  const bottom = pad?.bottom ?? 0;
+  const lat = position?.lat;
+  const lng = position?.lng;
+  useEffect(() => {
+    if (!active || lat === undefined || lng === undefined) return;
+    focusOn(map, lat, lng, { left, top, bottom });
+  }, [map, active, lat, lng, left, top, bottom]);
+  return null;
 }
 
-const CLUSTER_CELL_PX = 64;
-const CLUSTER_UNTIL_ZOOM = 17;
-
 /**
- * Groups branches that sit within one ~64px screen cell at the current zoom
- * into a numbered bubble; tapping a bubble zooms in until they split. The
- * selected branch is never folded into a bubble. Zoom 17+ shows every pin.
+ * Keeps a moving person in view during navigation: when they get near the edge of the free part of the map (the part not
+ * covered by the panel or sheet), the map glides so they are back in the middle of it. Dragging the map is the person's way to stop it.
  */
-function ClusteredBranchMarkers({ branches, selectedKey, highlightKey, onSelect }: {
-  readonly branches: DiscoveryMapBranch[];
-  readonly selectedKey: string | null;
-  /** Hovered in the side list: pulled out of its bubble and bounced. */
-  readonly highlightKey: string | null;
-  readonly onSelect: (branch: DiscoveryMapBranch) => void;
-}) {
+function FollowUser({ position, pad, onUserPan }: { readonly position: { lat: number; lng: number } | null; readonly pad?: FitPadding; readonly onUserPan?: () => void }) {
   const map = useMap();
-  const [viewTick, setViewTick] = useState(0);
-  useMapEvents({ zoomend: () => setViewTick((t) => t + 1), moveend: () => setViewTick((t) => t + 1) });
+  const left = pad?.left ?? 0;
+  const top = pad?.top ?? 0;
+  const bottom = pad?.bottom ?? 0;
+  const lat = position?.lat;
+  const lng = position?.lng;
+  useMapEvents({ dragstart: () => onUserPan?.() });
 
-  const groups = useMemo(() => {
-    const zoom = map.getZoom();
-    const free = branches.filter((b) => {
-      const key = `${b.storeSlug}-${b.branchId}`;
-      return key !== selectedKey && key !== highlightKey;
-    });
-    if (zoom >= CLUSTER_UNTIL_ZOOM) return free.map((b) => [b]);
-    const cells = new Map<string, DiscoveryMapBranch[]>();
-    free.forEach((b) => {
-      const p = map.project([b.latitude, b.longitude], zoom);
-      const key = `${Math.floor(p.x / CLUSTER_CELL_PX)}:${Math.floor(p.y / CLUSTER_CELL_PX)}`;
-      cells.set(key, [...(cells.get(key) ?? []), b]);
-    });
-    return [...cells.values()];
-    // viewTick re-runs this on every zoom/pan.
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branches, selectedKey, highlightKey, map, viewTick]);
-
-  const selected = branches.find((b) => `${b.storeSlug}-${b.branchId}` === selectedKey) ?? null;
-  const highlighted = highlightKey && highlightKey !== selectedKey
-    ? branches.find((b) => `${b.storeSlug}-${b.branchId}` === highlightKey) ?? null
-    : null;
-  // Built once per pin, not per pan/zoom re-render, so the bounce plays once.
-  const selectedIcon = useMemo(
-    () => (selected ? buildStorePinIcon(selected.storeLogoPath, selected.isMain, selected.isOpen, true, true, pinName(selected)) : null),
-    [selected],
-  );
-  const highlightedIcon = useMemo(
-    () => (highlighted ? buildStorePinIcon(highlighted.storeLogoPath, highlighted.isMain, highlighted.isOpen, false, true, pinName(highlighted)) : null),
-    [highlighted],
-  );
-
-  return (
-    <>
-      {groups.map((group) => {
-        if (group.length === 1) {
-          const b = group[0];
-          return (
-            <Marker
-              key={`${b.storeSlug}-${b.branchId}`}
-              position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen, false, false, pinName(b))}
-              title={pinName(b)}
-              eventHandlers={{ click: () => onSelect(b) }}
-            />
-          );
-        }
-        const lat = group.reduce((s, b) => s + b.latitude, 0) / group.length;
-        const lng = group.reduce((s, b) => s + b.longitude, 0) / group.length;
-        const bounds = L.latLngBounds(group.map((b) => [b.latitude, b.longitude] as [number, number]));
-        return (
-          <Marker
-            key={`cluster-${group.map((b) => b.branchId).join('-')}`}
-            position={[lat, lng]}
-            icon={buildClusterIcon(group.length)}
-            title={`${group.length} shops here — tap to zoom in`}
-            eventHandlers={{
-              click: () => {
-                // All at one spot (same building): jump straight to street level.
-                if (bounds.getNorthEast().equals(bounds.getSouthWest())) map.setView([lat, lng], CLUSTER_UNTIL_ZOOM + 1);
-                else map.fitBounds(bounds, { padding: [80, 80], maxZoom: CLUSTER_UNTIL_ZOOM + 1 });
-              },
-            }}
-          />
-        );
-      })}
-      {highlighted && highlightedIcon && (
-        <Marker
-          position={[highlighted.latitude, highlighted.longitude]}
-          zIndexOffset={900}
-          icon={highlightedIcon}
-          title={pinName(highlighted)}
-          eventHandlers={{ click: () => onSelect(highlighted) }}
-        />
-      )}
-      {selected && selectedIcon && (
-        <Marker
-          position={[selected.latitude, selected.longitude]}
-          zIndexOffset={1000}
-          icon={selectedIcon}
-          title={pinName(selected)}
-          eventHandlers={{ click: () => onSelect(selected) }}
-        />
-      )}
-    </>
-  );
+  useEffect(() => {
+    if (lat === undefined || lng === undefined) return;
+    const size = map.getSize();
+    const at = map.latLngToContainerPoint([lat, lng]);
+    const edge = 72;
+    const inside = at.x > left + edge && at.x < size.x - edge && at.y > top + edge && at.y < size.y - bottom - edge;
+    if (inside) return;
+    const middle = L.point(left + (size.x - left) / 2, top + (size.y - top - bottom) / 2);
+    map.panBy(at.subtract(middle), { animate: true, duration: 0.6 });
+  }, [map, lat, lng, left, top, bottom]);
+  return null;
 }
 
 function MapEventsHandler({
@@ -311,11 +256,6 @@ function MapEventsHandler({
   return null;
 }
 
-// A pin's name: the shop's name for its Main Shop, the branch's own name for a Branch Shop.
-// Lives in its own leaflet-free file so list UI can import it during server prerender.
-import { pinName } from './pinName';
-export { pinName };
-
 export interface DiscoveryMapBranch {
   storeSlug: string;
   storeName: string;
@@ -330,14 +270,33 @@ export interface DiscoveryMapBranch {
   latitude: number;
   longitude: number;
   isOpen?: boolean;
-  /** Tailor Locator list cards: photo, rating, specialties, distance. */
-  storeBannerPath?: string | null;
-  rating?: number | null;
-  reviewsCount?: number;
-  specializations?: string[];
-  distanceKm?: number | null;
-  /** Road km from the server for the customer's location (map page). */
+  badgeText?: string | null;
+  isSelected?: boolean;
+  /** Road km from the server for the customer's location (?branch_km=1); null = only the straight line is known. */
   roadKm?: number | null;
+}
+
+/** Locks all map panning and zooming when interactive is false (e.g. when panel is expanded). */
+function MapInteractionLock({ interactive = true }: { readonly interactive?: boolean }) {
+  const map = useMap();
+  useEffect(() => {
+    if (!interactive) {
+      map.dragging.disable();
+      map.touchZoom.disable();
+      map.doubleClickZoom.disable();
+      map.scrollWheelZoom.disable();
+      map.boxZoom.disable();
+      map.keyboard.disable();
+    } else {
+      map.dragging.enable();
+      map.touchZoom.enable();
+      map.doubleClickZoom.enable();
+      map.scrollWheelZoom.enable();
+      map.boxZoom.enable();
+      map.keyboard.enable();
+    }
+  }, [map, interactive]);
+  return null;
 }
 
 interface DiscoveryMapProps {
@@ -349,14 +308,35 @@ interface DiscoveryMapProps {
   readonly onMoveEnd?: (lat: number, lng: number) => void;
   readonly mapRef?: React.MutableRefObject<LeafletMap | null>;
   readonly disableFitBounds?: boolean;
-  /** Active directions route as [lat, lng] points; null when not navigating. */
-  readonly routePath?: [number, number][] | null;
-  /** Group nearby pins into numbered bubbles (Tailor Locator). Needs onSelectBranch. */
+  /** Room to leave free when fitting pins into view (a side panel or bottom sheet covers part of the map). */
+  readonly fitPadding?: FitPadding;
+  /** A road route to draw ([lat, lng] pairs); the map then fits the route instead of the pins. */
+  readonly route?: [number, number][] | null;
+  /** The whole route to fit the map to; unlike `route` it does not shrink as the person moves along it. */
+  readonly routeFit?: [number, number][] | null;
+  /** Where the map opens (instead of fitting the pins), e.g. a saved place at street level. */
+  readonly initialView?: { lat: number; lng: number; zoom: number };
+  /** While true, the map is held on the person (street level) instead of fitting all the pins; dragging the map ends it via `onUserPan`. */
+  readonly focusUser?: boolean;
+  /** Direction of travel in degrees from the GPS while moving fast; the "You" beam otherwise follows the phone's compass. */
+  readonly userCourse?: number | null;
+  /** While set, the map follows this moving position. */
+  readonly followPosition?: { lat: number; lng: number } | null;
+  /** The person dragged the map: stop following. */
+  readonly onUserPan?: () => void;
+  /** When false, all map dragging, zooming, and pointer interactions are disabled. */
+  readonly interactive?: boolean;
+  /** A Davao district to outline (with the whole city) and fit; the pin fit pauses while one is shown. */
+  /** The chosen province / city (PSGC codes): outlined on the map like a district (DistrictHighlight). */
+  readonly highlightProvince?: string | null;
+  readonly highlightCity?: string | null;
+  readonly highlightDistrict?: string | null;
+  /** Always outline Davao City ("All Davao" on the map screen). */
+  readonly showCity?: boolean;
+  /** Frame the whole city now (the person picked "All Davao"); the pin fit pauses meanwhile. */
+  readonly fitCity?: boolean;
+  /** Merge nearby pins into numbered bubbles that split again when zooming in (needs `onSelectBranch`). */
   readonly cluster?: boolean;
-  /** Drawn larger with a double ring, bounced, and never clustered. */
-  readonly selectedBranch?: DiscoveryMapBranch | null;
-  /** Hovered in a side list: bounced and pulled out of its cluster. */
-  readonly highlightedBranch?: DiscoveryMapBranch | null;
 }
 
 export default function DiscoveryMap({
@@ -368,10 +348,21 @@ export default function DiscoveryMap({
   onMoveEnd,
   mapRef,
   disableFitBounds,
-  routePath,
+  fitPadding,
+  route,
+  routeFit,
+  userCourse,
+  initialView,
+  focusUser,
+  followPosition,
+  onUserPan,
+  interactive = true,
+  highlightDistrict = null,
+  highlightProvince = null,
+  highlightCity = null,
+  showCity = false,
+  fitCity = false,
   cluster = false,
-  selectedBranch = null,
-  highlightedBranch = null,
 }: DiscoveryMapProps) {
   const gate = useGuestGatedHref();
   const hasNoResults = branches.length === 0 && !userLocation && !selectable;
@@ -380,9 +371,16 @@ export default function DiscoveryMap({
     () => branches.map((b) => [b.latitude, b.longitude] as [number, number]),
     [branches]
   );
+  // Fitting needs only a sample of a long road line, and always both ends.
+  const routeBounds = useMemo(() => {
+    const line = routeFit ?? route;
+    if (!line || line.length < 2) return null;
+    const step = Math.max(1, Math.floor(line.length / 40));
+    return [...line.filter((_, i) => i % step === 0), line[line.length - 1]];
+  }, [routeFit, route]);
   const boundsPoints = useMemo(
-    () => (userLocation ? [...points, [userLocation.lat, userLocation.lng] as [number, number]] : points),
-    [points, userLocation]
+    () => routeBounds ?? (userLocation ? [...points, [userLocation.lat, userLocation.lng] as [number, number]] : points),
+    [routeBounds, points, userLocation],
   );
   const center = useMemo(
     () => boundsPoints[0] ?? [7.0731, 125.6128], // Davao City fallback
@@ -391,29 +389,40 @@ export default function DiscoveryMap({
 
   return (
     <div
-      className={fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'}
+      className={`${fullScreen ? 'absolute inset-0' : 'relative rounded-2xl overflow-hidden border border-line'} ${interactive === false ? 'pointer-events-none select-none' : ''}`}
       style={fullScreen ? undefined : { height: 520 }}
     >
-      <MapContainer center={center} zoom={14} scrollWheelZoom zoomControl={false} style={{ height: '100%', width: '100%' }}>
+      <MapContainer
+        center={initialView ? [initialView.lat, initialView.lng] : center}
+        zoom={initialView?.zoom ?? 14}
+        maxZoom={21}
+        minZoom={3}
+        // Choosing a place: the pin is fixed in the middle, so zooming (wheel, trackpad pinch, fingers, double tap) goes around the pin
+        // and the place under it stays put; only dragging moves it.
+        scrollWheelZoom={selectable ? 'center' : true}
+        touchZoom={selectable ? 'center' : true}
+        doubleClickZoom={selectable ? 'center' : true}
+        zoomControl={false} style={{ height: '100%', width: '100%' }}>
+        <MapInteractionLock interactive={interactive} />
         <TileLayer
           url="https://tile.openstreetmap.org/{z}/{x}/{y}.png"
           attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
+          maxZoom={21}
+          maxNativeZoom={19}
         />
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
-        {/* While a route is shown it owns the viewport; fitting to every pin would yank it away. */}
-        <FitBounds points={boundsPoints} disable={disableFitBounds || !!routePath} />
-        {routePath && <RouteLayer path={routePath} />}
-        {userLocation && (
-          <>
-            <Marker position={[userLocation.lat, userLocation.lng]} icon={userLocationIcon} zIndexOffset={USER_MARKER_Z} keyboard={false} />
-            {!routePath && <RecenterControl position={userLocation} />}
-          </>
-        )}
+        {/* A chosen district, or "All Davao" just picked, frames the map itself (DistrictHighlight), so the pin fit steps
+            aside — unless a route is drawn. */}
+        <FitBounds points={boundsPoints} disable={disableFitBounds || ((Boolean(highlightDistrict) || Boolean(highlightProvince) || Boolean(highlightCity) || fitCity) && !routeBounds)} pad={fitPadding} />
+        <DistrictHighlight district={routeBounds ? null : highlightDistrict} province={routeBounds ? null : highlightProvince} city={routeBounds ? null : highlightCity} showCity={showCity} fitCity={fitCity && !routeBounds} pad={fitPadding} />
+        <FocusOnUser position={userLocation ?? null} pad={fitPadding} active={Boolean(focusUser)} />
+        <FollowUser position={followPosition ?? null} pad={fitPadding} onUserPan={onUserPan} />
+        {route && route.length > 1 && <Polyline positions={route} pathOptions={{ color: '#6B4E3E', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />}
+        {userLocation && <YouMarker position={userLocation} course={userCourse} />}
         {cluster && onSelectBranch && (
-          <ClusteredBranchMarkers
+          <ClusteredPins
             branches={branches}
-            selectedKey={selectedBranch ? `${selectedBranch.storeSlug}-${selectedBranch.branchId}` : null}
-            highlightKey={highlightedBranch ? `${highlightedBranch.storeSlug}-${highlightedBranch.branchId}` : null}
+            iconFor={(b) => pinIcon(b.storeLogoPath, b.badgeText ?? null, b.isOpen, Boolean(b.isSelected))}
             onSelect={onSelectBranch}
           />
         )}
@@ -423,21 +432,22 @@ export default function DiscoveryMap({
             <Marker
               key={key}
               position={[b.latitude, b.longitude]}
-              icon={buildStorePinIcon(b.storeLogoPath, b.isMain, b.isOpen, false, false, pinName(b))}
+              icon={pinIcon(b.storeLogoPath, b.badgeText ?? null, b.isOpen, Boolean(b.isSelected))}
+              zIndexOffset={b.isSelected ? 1000 : 0}
               eventHandlers={onSelectBranch ? { click: () => onSelectBranch(b) } : undefined}
             >
               {!onSelectBranch && (
                 <Popup>
-                  <strong>{pinName(b)}</strong>
+                  <strong>{b.storeName}</strong>
                   {' '}
-                  <span style={{ fontSize: '11px', color: '#2D2A26', fontWeight: 700 }}>
-                    {b.isMain ? '(Main Shop)' : `· ${b.storeName}`}
+                  <span style={{ fontSize: '12px', color: '#2D2A26', fontWeight: 700 }}>
+                    {b.isMain ? '(Main Branch)' : `(${b.branchName})`}
                   </span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '11px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px', margin: '3px 0', fontSize: '12px', fontWeight: 600, color: b.isOpen ? '#16a34a' : '#dc2626' }}>
                     <span style={{ width: '7px', height: '7px', borderRadius: '50%', background: b.isOpen ? '#22c55e' : '#ef4444', display: 'inline-block' }} />
                     {b.isOpen ? 'Open' : 'Closed'}
                   </div>
-                  {formatAddress({ address: b.address, city: b.city })}
+                  {b.address}, {b.city}
                   {b.landmark ? (
                     <>
                       <br />
@@ -446,7 +456,7 @@ export default function DiscoveryMap({
                   ) : null}
                   <br />
                   <Link href={gate(`/store/${b.storeSlug}`)} className="text-ink font-bold hover:underline">
-                    View shop →
+                    View store →
                   </Link>
                 </Popup>
               )}
@@ -472,7 +482,7 @@ export default function DiscoveryMap({
       {hasNoResults && (
         <div className="absolute inset-x-0 bottom-4 z-[1000] flex justify-center px-4 pointer-events-none">
           <p className="bg-surface shadow-lg rounded-xl px-4 py-2.5 text-xs text-ink-muted text-center pointer-events-auto">
-            No shops with map coordinates match these filters yet.
+            No stores with map coordinates match these filters yet.
           </p>
         </div>
       )}

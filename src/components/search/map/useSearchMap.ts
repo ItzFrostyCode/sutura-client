@@ -1,0 +1,105 @@
+'use client';
+
+import { useCallback, useMemo, useRef, useState } from 'react';
+import type { Map as LeafletMap } from 'leaflet';
+import { requestCurrentLocation, saveLocationWithHistory, type SavedLocation } from '@/lib/customerLocation';
+import { useToast } from '@/context/ToastContext';
+import { focusOn, type FocusPad } from '@/lib/mapFocus';
+import type { DiscoveryMapBranch } from '@/components/discovery/DiscoveryMap';
+import type { RelatedStore } from '../types';
+import { storesToPins } from './storePins';
+
+/** The map half of Search + Map: pins from the shops found, the selected pin, and the three map buttons. */
+export function useSearchMap(stores: RelatedStore[], coverRef?: { readonly current: FocusPad | undefined }) {
+  const mapRef = useRef<LeafletMap | null>(null);
+  const toast = useToast();
+  const [picked, setPicked] = useState<DiscoveryMapBranch | null>(null);
+  const [locating, setLocating] = useState(false);
+  const pins = useMemo(
+    () => storesToPins(stores, picked?.storeSlug, picked?.branchId),
+    [stores, picked?.storeSlug, picked?.branchId],
+  );
+
+  // A pin that the filters have since removed is no longer selected.
+  const selected = (picked && pins.find((p) => p.storeSlug === picked.storeSlug && p.branchId === picked.branchId))
+    || (picked && pins.find((p) => p.storeSlug === picked.storeSlug))
+    || null;
+
+  const pickedSlug = picked?.storeSlug ?? null;
+  const selectPin = useCallback((branch: DiscoveryMapBranch | null) => {
+    setPicked(branch);
+    const map = mapRef.current;
+    if (!branch || !map) return;
+    // A shop just opened that has more than one branch: show all its branches at once (main + the others), so the
+    // customer sees where each one is. Tapping a branch after that (same shop) moves to that branch.
+    if (branch.storeSlug !== pickedSlug) {
+      const store = stores.find((s) => s.slug === branch.storeSlug);
+      const points = (store?.branches ?? [])
+        .filter((b) => b.latitude != null && b.longitude != null && !Number.isNaN(Number(b.latitude)) && !Number.isNaN(Number(b.longitude)))
+        .map((b) => [Number(b.latitude), Number(b.longitude)] as [number, number]);
+      if (points.length > 1) {
+        const { top = 0, left = 0, bottom = 0 } = coverRef?.current ?? {};
+        map.fitBounds(points, { paddingTopLeft: [60 + left, 60 + top], paddingBottomRight: [60, 60 + bottom], maxZoom: 15 });
+        return;
+      }
+    }
+    // Centred in the part of the map NOT covered by the panel / the shop card (coverRef), so the pin is never hidden under it.
+    focusOn(map, branch.latitude, branch.longitude, coverRef?.current);
+  }, [coverRef, stores, pickedSlug]);
+
+  // From the results list: show this shop's pin. False when it has none.
+  const selectStore = useCallback((slug: string) => {
+    const store = stores.find((s) => s.slug === slug);
+    if (!store) return false;
+    const validBranches = (store.branches ?? []).filter(
+      (b) => b.latitude != null && b.longitude != null && !Number.isNaN(Number(b.latitude))
+    );
+    if (validBranches.length === 0) return false;
+    const primary = validBranches.find((b) => Boolean((b as { is_main?: boolean }).is_main)) ?? validBranches[0];
+
+    const pin: DiscoveryMapBranch = {
+      storeSlug: store.slug,
+      storeName: store.name,
+      storeLogoPath: store.logo_path,
+      branchId: primary.id,
+      branchName: primary.name,
+      isMain: Boolean((primary as { is_main?: boolean }).is_main),
+      address: primary.address ?? null,
+      city: primary.city,
+      district: primary.district,
+      landmark: null,
+      latitude: Number(primary.latitude),
+      longitude: Number(primary.longitude),
+      roadKm: primary.road_km ?? null,
+      isOpen: false,
+      badgeText: 'MAIN',
+      isSelected: true,
+    };
+    selectPin(pin);
+    return true;
+  }, [stores, selectPin]);
+
+  const zoomIn = useCallback(() => mapRef.current?.zoomIn(), []);
+  const zoomOut = useCallback(() => mapRef.current?.zoomOut(), []);
+
+  // Centres on the person's real position and keeps it as their location, so distances follow. Like Google Maps' my-location
+  // button it zooms IN to street level and never out.
+  const locate = useCallback((pad?: FocusPad, onLocated?: (loc: SavedLocation) => void) => {
+    setLocating(true);
+    requestCurrentLocation(
+      (loc) => {
+        saveLocationWithHistory(loc);
+        if (mapRef.current) focusOn(mapRef.current, loc.lat, loc.lng, pad);
+        setLocating(false);
+        toast.success(`Location updated to ${loc.address || 'your current position'}.`);
+        onLocated?.(loc);
+      },
+      () => {
+        toast.error('Could not get your location. Check your browser’s location permission.');
+        setLocating(false);
+      },
+    );
+  }, [toast]);
+
+  return { mapRef, pins, selected, selectPin, selectStore, zoomIn, zoomOut, locate, locating };
+}

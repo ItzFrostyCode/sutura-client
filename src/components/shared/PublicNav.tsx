@@ -28,6 +28,9 @@ export default function PublicNav({
   /** Phone only: a slim row under the header bar. */
   readonly mobileBar?: React.ReactNode;
 } = {}) {
+  // Inside the map's shop panel the storefront is an iframe (?embed=1): the panel already has its own header.
+  const [embedded, setEmbedded] = React.useState(false);
+  React.useEffect(() => { setEmbedded(new URLSearchParams(window.location.search).get('embed') === '1'); }, []);
   const {
     menuOpen,
     screen,
@@ -51,6 +54,8 @@ export default function PublicNav({
     openCategory,
     toggleSection,
   } = usePublicNav();
+
+  if (embedded) return null;
 
   return (
     <header className={`${isSticky ? 'sticky top-0' : 'relative'} z-50 w-full shrink-0 bg-surface border-b border-line text-ink ${className}`}>
