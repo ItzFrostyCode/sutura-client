@@ -47,6 +47,7 @@ export function storesToPins(
           landmark: null,
           latitude: Number(primaryBranch.latitude),
           longitude: Number(primaryBranch.longitude),
+          roadKm: primaryBranch.road_km ?? null,
           isOpen: open,
           badgeText: null, // No badge on general map
           isSelected: false,
@@ -80,6 +81,7 @@ export function storesToPins(
         landmark: null,
         latitude: Number(b.latitude),
         longitude: Number(b.longitude),
+        roadKm: b.road_km ?? null,
         isOpen: open,
         badgeText,
         isSelected,

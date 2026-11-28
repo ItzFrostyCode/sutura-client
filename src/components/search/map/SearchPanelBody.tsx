@@ -51,10 +51,10 @@ export default function SearchPanelBody({
   const store = selected ? s.stores.find((st) => st.slug === selected.storeSlug) : undefined;
   const detail = Boolean(selected && store);
 
-  // Straight-line distance from the user to the open branch
+  // Distance from the user to the open branch: by road when the server could work it out, else the straight line.
   const km =
     selected && s.userCoords
-      ? haversineKm(s.userCoords.lat, s.userCoords.lng, selected.latitude, selected.longitude)
+      ? (selected.roadKm ?? haversineKm(s.userCoords.lat, s.userCoords.lng, selected.latitude, selected.longitude))
       : null;
 
   return (

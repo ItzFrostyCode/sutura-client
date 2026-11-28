@@ -6,7 +6,7 @@ import { haversineKm } from '@/lib/customerLocation';
 import { isStoreOpen } from '@/lib/storeStatus';
 import type { ShopStatusFilter } from '@/components/home/homeFilters';
 import type { CatalogItemResult } from '@/types/publicCatalog';
-import type { RelatedStore, SearchServiceResult } from '../types';
+import type { RelatedStore, SearchPackageResult, SearchServiceResult } from '../types';
 import { garmentFilter } from './searchUrl';
 
 type Params = Record<string, string | number>;
@@ -34,9 +34,10 @@ export interface SearchCriteria {
   page: number;
 }
 
-/** The place and price filters every list shares. */
+/** The place, price and rating filters every list shares (shops, services and designs all accept min_rating). */
 function sharedParams(c: SearchCriteria, params: Params) {
   if (c.minPrice) params.min_price = c.minPrice;
+  if (c.minRating) params.min_rating = c.minRating;
   if (c.maxPrice) params.max_price = c.maxPrice;
   if (c.province) params.province_code = c.province;
   if (c.city) params.city_code = c.city;
@@ -61,6 +62,7 @@ export function useSearchResults(c: SearchCriteria) {
   const [storesLoading, setStoresLoading] = useState(true);
   const [services, setServices] = useState<SearchServiceResult[]>([]);
   const [servicesLoading, setServicesLoading] = useState(false);
+  const [packages, setPackages] = useState<SearchPackageResult[]>([]);
 
   // Designs
   useEffect(() => {
@@ -71,7 +73,6 @@ export function useSearchResults(c: SearchCriteria) {
       const text = withWords(q, words);
       if (text) params.q = text;
       sharedParams(c, params);
-      if (minRating) params.min_rating = minRating;
       if (userCoords) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
@@ -115,6 +116,7 @@ export function useSearchResults(c: SearchCriteria) {
         params.lat = userCoords.lat;
         params.lng = userCoords.lng;
         params.sort_by = 'distance';
+        params.branch_km = 1; // road km for every branch (map pins and the open shop), same as Bongo's map page
         if (radiusKm) params.radius_km = radiusKm;
       }
 
@@ -143,7 +145,7 @@ export function useSearchResults(c: SearchCriteria) {
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, userCoords, minPrice, maxPrice, radiusKm, openStatus]);
+  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, userCoords, minPrice, maxPrice, minRating, radiusKm, openStatus]);
 
   // Services
   useEffect(() => {
@@ -164,6 +166,16 @@ export function useSearchResults(c: SearchCriteria) {
       }
       if (sortBy) params.sort_by = sortBy;
 
+      // Combo packages ride along with services: same text, category and place (province, city, district).
+      const pkgParams: Params = {};
+      for (const key of ['q', 'service_category', 'province_code', 'city_code', 'district'] as const) {
+        if (params[key] !== undefined) pkgParams[key] = params[key];
+      }
+      api
+        .get('/public/service-packages', { params: pkgParams })
+        .then((res) => setPackages(res.data.data ?? []))
+        .catch(() => setPackages([]));
+
       api
         .get('/public/services', { params })
         .then((res) => setServices(res.data.data ?? []))
@@ -172,7 +184,7 @@ export function useSearchResults(c: SearchCriteria) {
     }, 300);
     return () => clearTimeout(handle);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, serviceType, userCoords, sortBy, minPrice, maxPrice]);
+  }, [q, province, city, district, barangay, area, garmentType, serviceCategory, serviceType, userCoords, sortBy, minPrice, maxPrice, minRating]);
 
-  return { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading };
+  return { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading, packages };
 }

@@ -19,7 +19,7 @@ import { useHomeLocation } from '@/components/home/useHomeLocation';
 import { useDiscoverData } from '@/components/home/useDiscoverData';
 import LocationGate from '@/components/home/gate/LocationGate';
 import { useLocationGate } from '@/components/home/gate/useLocationGate';
-import { DEFAULT_ALL_FILTERS, countAllFilters, type AllFilters } from '@/components/home/homeFilters';
+import { DEFAULT_ALL_FILTERS, DEFAULT_MORE_FILTERS, countAllFilters, type AllFilters } from '@/components/home/homeFilters';
 import { addRecentSearch } from '@/lib/recentSearches';
 
 export default function HomePage() {
@@ -46,7 +46,8 @@ export default function HomePage() {
     if (filters.province) { params.set('province', filters.province); params.set('tab', 'store'); }
     if (filters.city) params.set('city', filters.city);
     if (filters.district) { params.set('district', filters.district); params.set('tab', 'store'); }
-    if (filters.sortBy) params.set('sort_by', filters.sortBy);
+    // Low to High is the default order, so only a changed order is sent (otherwise every search would be price-sorted).
+    if (filters.sortBy && filters.sortBy !== DEFAULT_MORE_FILTERS.sortBy) params.set('sort_by', filters.sortBy);
     // A search from Discover opens the LIST of results straight away (the Map's List view), not the map.
     params.set('view', 'list');
     router.push(`/search?${params.toString()}`);

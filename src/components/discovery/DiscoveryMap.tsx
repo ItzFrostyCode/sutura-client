@@ -239,6 +239,8 @@ export interface DiscoveryMapBranch {
   isOpen?: boolean;
   badgeText?: string | null;
   isSelected?: boolean;
+  /** Road km from the server for the customer's location (?branch_km=1); null = only the straight line is known. */
+  roadKm?: number | null;
 }
 
 /** Locks all map panning and zooming when interactive is false (e.g. when panel is expanded). */
@@ -292,6 +294,9 @@ interface DiscoveryMapProps {
   /** When false, all map dragging, zooming, and pointer interactions are disabled. */
   readonly interactive?: boolean;
   /** A Davao district to outline (with the whole city) and fit; the pin fit pauses while one is shown. */
+  /** The chosen province / city (PSGC codes): outlined on the map like a district (DistrictHighlight). */
+  readonly highlightProvince?: string | null;
+  readonly highlightCity?: string | null;
   readonly highlightDistrict?: string | null;
   /** Always outline Davao City ("All Davao" on the map screen). */
   readonly showCity?: boolean;
@@ -320,6 +325,8 @@ export default function DiscoveryMap({
   onUserPan,
   interactive = true,
   highlightDistrict = null,
+  highlightProvince = null,
+  highlightCity = null,
   showCity = false,
   fitCity = false,
   cluster = false,
@@ -373,8 +380,8 @@ export default function DiscoveryMap({
         <MapEventsHandler onMoveEnd={onMoveEnd} mapRef={mapRef} enabled={selectable} />
         {/* A chosen district, or "All Davao" just picked, frames the map itself (DistrictHighlight), so the pin fit steps
             aside — unless a route is drawn. */}
-        <FitBounds points={boundsPoints} disable={disableFitBounds || ((Boolean(highlightDistrict) || fitCity) && !routeBounds)} pad={fitPadding} />
-        <DistrictHighlight district={routeBounds ? null : highlightDistrict} showCity={showCity} fitCity={fitCity && !routeBounds} pad={fitPadding} />
+        <FitBounds points={boundsPoints} disable={disableFitBounds || ((Boolean(highlightDistrict) || Boolean(highlightProvince) || Boolean(highlightCity) || fitCity) && !routeBounds)} pad={fitPadding} />
+        <DistrictHighlight district={routeBounds ? null : highlightDistrict} province={routeBounds ? null : highlightProvince} city={routeBounds ? null : highlightCity} showCity={showCity} fitCity={fitCity && !routeBounds} pad={fitPadding} />
         <FocusOnUser position={userLocation ?? null} pad={fitPadding} active={Boolean(focusUser)} />
         <FollowUser position={followPosition ?? null} pad={fitPadding} onUserPan={onUserPan} />
         {route && route.length > 1 && <Polyline positions={route} pathOptions={{ color: '#6B4E3E', weight: 5, opacity: 0.9, lineCap: 'round', lineJoin: 'round' }} />}

@@ -75,7 +75,24 @@ export async function reverseGeocodeCoords(lat: number, lng: number): Promise<Ge
     // Continue to final fallback
   }
 
-  // Strategy 3: Coordinates fallback when offline or unavailable
+  // Strategy 3 (same as Bongo's): BigDataCloud's keyless client endpoint. No street, but the district and city
+  // ("Poblacion, Davao City") when Photon and Nominatim both fail (Nominatim rate-limits busy connections, Photon has outages).
+  try {
+    const res = await fetch(`https://api.bigdatacloud.net/data/reverse-geocode-client?latitude=${lat}&longitude=${lng}&localityLanguage=en`);
+    if (res.ok) {
+      const data = await res.json();
+      const admin: { name?: string; adminLevel?: number }[] = data?.localityInfo?.administrative ?? [];
+      // Deepest named area below the city (adminLevel 8+: district / barangay).
+      const area = [...admin].reverse().find((x) => (x.adminLevel ?? 0) >= 8 && x.name)?.name;
+      const city = data?.city === 'Davao' ? 'Davao City' : data?.city || data?.locality;
+      const address = joinAddress(area, city);
+      if (address) return { address, district: cleanDistrict(area) || city || 'Davao City' };
+    }
+  } catch {
+    // Continue to final fallback
+  }
+
+  // Strategy 4: Coordinates fallback when offline or unavailable
   return {
     address: `${lat.toFixed(4)}, ${lng.toFixed(4)}`,
     district: 'Davao City',

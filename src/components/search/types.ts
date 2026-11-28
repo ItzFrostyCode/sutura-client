@@ -27,6 +27,8 @@ export interface RelatedStore {
     is_main?: boolean;
     contact_number?: string | null;
     operating_hours?: OperatingHours | null;
+    /** Road km from the customer (only with ?branch_km=1 and the server's road service). */
+    road_km?: number | null;
   }[];
   catalog_items?: {
     id: number;
@@ -122,3 +124,17 @@ export const FILTER_TABS = [
 export type FilterTabKey = typeof FILTER_TABS[number]['key'];
 
 export type SearchActiveTab = 'all' | 'store' | 'services' | 'showroom';
+
+/** A combo package in search results (GET /public/service-packages). */
+export interface SearchPackageResult {
+  id: number;
+  name: string;
+  description: string | null;
+  service_category: string | null;
+  image_url: string | null;
+  bundle_price: string | null;
+  reviews_count?: number;
+  reviews_avg_rating?: number | null;
+  services: { id: number; name: string; base_price: string | null }[];
+  store: { id: number; name: string; slug: string; branches?: { district?: string | null; city?: string | null }[] } | null;
+}

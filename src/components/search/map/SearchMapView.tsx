@@ -313,6 +313,8 @@ export default function SearchMapView() {
           disableFitBounds={focusMe || (nav.following && nav.position !== null) || mapBlocked}
           interactive={!mapBlocked}
           highlightDistrict={s.district || null}
+          highlightProvince={s.province || null}
+          highlightCity={s.city || null}
           showCity={inDavaoCity}
           fitCity={cityView && !map.selected && inDavaoCity}
         />

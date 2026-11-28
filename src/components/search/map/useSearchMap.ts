@@ -25,12 +25,27 @@ export function useSearchMap(stores: RelatedStore[], coverRef?: { readonly curre
     || (picked && pins.find((p) => p.storeSlug === picked.storeSlug))
     || null;
 
+  const pickedSlug = picked?.storeSlug ?? null;
   const selectPin = useCallback((branch: DiscoveryMapBranch | null) => {
     setPicked(branch);
     const map = mapRef.current;
+    if (!branch || !map) return;
+    // A shop just opened that has more than one branch: show all its branches at once (main + the others), so the
+    // customer sees where each one is. Tapping a branch after that (same shop) moves to that branch.
+    if (branch.storeSlug !== pickedSlug) {
+      const store = stores.find((s) => s.slug === branch.storeSlug);
+      const points = (store?.branches ?? [])
+        .filter((b) => b.latitude != null && b.longitude != null && !Number.isNaN(Number(b.latitude)) && !Number.isNaN(Number(b.longitude)))
+        .map((b) => [Number(b.latitude), Number(b.longitude)] as [number, number]);
+      if (points.length > 1) {
+        const { top = 0, left = 0, bottom = 0 } = coverRef?.current ?? {};
+        map.fitBounds(points, { paddingTopLeft: [60 + left, 60 + top], paddingBottomRight: [60, 60 + bottom], maxZoom: 15 });
+        return;
+      }
+    }
     // Centred in the part of the map NOT covered by the panel / the shop card (coverRef), so the pin is never hidden under it.
-    if (branch && map) focusOn(map, branch.latitude, branch.longitude, coverRef?.current);
-  }, [coverRef]);
+    focusOn(map, branch.latitude, branch.longitude, coverRef?.current);
+  }, [coverRef, stores, pickedSlug]);
 
   // From the results list: show this shop's pin. False when it has none.
   const selectStore = useCallback((slug: string) => {
@@ -55,6 +70,7 @@ export function useSearchMap(stores: RelatedStore[], coverRef?: { readonly curre
       landmark: null,
       latitude: Number(primary.latitude),
       longitude: Number(primary.longitude),
+      roadKm: primary.road_km ?? null,
       isOpen: false,
       badgeText: 'MAIN',
       isSelected: true,

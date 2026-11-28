@@ -40,11 +40,13 @@ export function useSearchData() {
   const [garmentType, setGarmentType] = useState(() => garmentParam(searchParams));
   const [serviceCategory, setServiceCategory] = useState(() => searchParams.get('service_category') ?? '');
   const [serviceType, setServiceType] = useState(() => searchParams.get('service_type') ?? '');
-  const [minPrice, setMinPrice] = useState(() => searchParams.get('minPrice') ?? '');
-  const [maxPrice, setMaxPrice] = useState(() => searchParams.get('maxPrice') ?? '');
-  const [minRating, setMinRating] = useState(() => searchParams.get('minRating') ?? '');
+  // The Discover (landing) search sends min_price / max_price / min_rating / sort_by; this page writes the camelCase
+  // names. Both are read so a filter picked on the landing reaches the Map.
+  const [minPrice, setMinPrice] = useState(() => searchParams.get('minPrice') ?? searchParams.get('min_price') ?? '');
+  const [maxPrice, setMaxPrice] = useState(() => searchParams.get('maxPrice') ?? searchParams.get('max_price') ?? '');
+  const [minRating, setMinRating] = useState(() => searchParams.get('minRating') ?? searchParams.get('min_rating') ?? '');
   const [district, setDistrict] = useState(() => searchParams.get('district') ?? '');
-  const [sortBy, setSortBy] = useState(() => searchParams.get('sortBy') ?? '');
+  const [sortBy, setSortBy] = useState(() => searchParams.get('sortBy') ?? searchParams.get('sort_by') ?? '');
   const [page, setPage] = useState(1);
 
   const radiusKm = parseRadiusKm(searchParams.get('radius_km'));
@@ -238,7 +240,7 @@ export function useSearchData() {
   }, [effectiveQ, specialization, garmentType, minPrice, maxPrice, minRating, province, city, district, barangay, area, sortBy, radiusKm, openStatus]);
 
   // Use the extracted results hook
-  const { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading } = useSearchResults({
+  const { items, total, lastPage, loading, stores, storesLoading, services, servicesLoading, packages } = useSearchResults({
     q: effectiveQ,
     garmentType: garmentType || specialization,
     serviceCategory,
@@ -284,6 +286,8 @@ export function useSearchData() {
       if (value) params.set(key, value);
       else params.delete(key);
     }
+    // The landing's names for the same filters: dropped once this page writes its own, so a cleared filter stays cleared.
+    for (const key of ['min_price', 'max_price', 'min_rating', 'sort_by']) params.delete(key);
     setPage(1);
     router.replace(`/search?${params.toString()}`, { scroll: false });
   }
@@ -361,6 +365,7 @@ export function useSearchData() {
     storesLoading,
     services,
     servicesLoading,
+    packages,
     servicesTotal: services.length,
     items,
     total,

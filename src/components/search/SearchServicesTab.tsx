@@ -7,7 +7,8 @@ import { Scissors, Store, Star, ChevronRight } from 'lucide-react';
 import { getMediaUrl } from '@/lib/media';
 import { isStoreOpen } from '@/lib/storeStatus';
 import StoreLogoAvatar from '@/components/StoreLogoAvatar';
-import { SearchServiceResult, RelatedStore, SearchActiveTab } from './types';
+import { SearchServiceResult, SearchPackageResult, RelatedStore, SearchActiveTab } from './types';
+import SearchPackageCard from './SearchPackageCard';
 import ServiceCarouselRow from './ServiceCarouselRow';
 import SearchServiceCard from './SearchServiceCard';
 import SearchNoResults from './SearchNoResults';
@@ -17,6 +18,7 @@ interface SearchServicesTabProps {
   readonly services: SearchServiceResult[];
   readonly servicesLoading: boolean;
   readonly servicesTotal: number;
+  readonly packages?: SearchPackageResult[];
   readonly stores: RelatedStore[];
   readonly activeTab: SearchActiveTab;
   readonly effectiveQ: string;
@@ -33,6 +35,7 @@ export default function SearchServicesTab({
   services,
   servicesLoading,
   servicesTotal,
+  packages = [],
   stores,
   activeTab,
   effectiveQ,
@@ -42,7 +45,7 @@ export default function SearchServicesTab({
   onSearch,
   onShowOnMap,
 }: SearchServicesTabProps) {
-  if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0))) {
+  if (activeTab !== 'services' && (activeTab !== 'all' || (!servicesLoading && services.length === 0 && packages.length === 0))) {
     return null;
   }
 
@@ -55,6 +58,20 @@ export default function SearchServicesTab({
         </div>
         <span className="text-xs text-ink-muted font-medium">{servicesTotal}</span>
       </div>
+
+      {!servicesLoading && packages.length > 0 && (
+        <div className="mb-5">
+          <p className="text-[11px] font-bold text-ink mb-2 px-1">Combo packages ({packages.length})</p>
+          {/* Same size and sliding row as the service cards below (the search panel is narrow at every screen size). */}
+          <ServiceCarouselRow label="Combo packages">
+            {packages.map((p) => (
+              <div key={p.id} className="snap-start shrink-0 w-[70%] min-w-[220px] max-w-[270px] sm:w-[250px] md:w-[270px]">
+                <SearchPackageCard pkg={p} gate={gate} />
+              </div>
+            ))}
+          </ServiceCarouselRow>
+        </div>
+      )}
 
       {servicesLoading ? (
         // Mirrors the real store row + service-card carousel below, so
@@ -89,7 +106,7 @@ export default function SearchServicesTab({
             </div>
           ))}
         </div>
-      ) : services.length === 0 ? (
+      ) : services.length === 0 && packages.length > 0 ? null : services.length === 0 ? (
         // Nothing found: the same screen as Shops — garment tiles, then the nearby shops under a line.
         <SearchNoResults query={effectiveQ} what="services" district={district} onSearch={(term) => onSearch?.(term)} userCoords={userCoords} />
       ) : (() => {

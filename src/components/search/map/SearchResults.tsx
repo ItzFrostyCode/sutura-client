@@ -83,6 +83,7 @@ export default function SearchResults({ s, onShowOnMap, className = '' }: Search
           services={services}
           servicesLoading={s.servicesLoading}
           servicesTotal={services.length}
+          packages={s.packages}
           stores={s.stores}
           activeTab={s.activeTab}
           effectiveQ={s.effectiveQ}
