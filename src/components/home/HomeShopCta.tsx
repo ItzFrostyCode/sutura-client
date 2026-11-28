@@ -3,9 +3,8 @@ import { Store } from 'lucide-react';
 
 /**
  * The landing page's closing invite for shop owners, above the footer.
- * "See how it works" opens the shop pitch (/for-shops); "Register your shop"
- * the application (/register/store). The 14-day trial matches
- * PlanStep's TRIAL_DAYS.
+ * "See how it works" opens the shop pitch (/for-shops), which has its own
+ * "Start free trial" buttons. The 14-day trial matches PlanStep's TRIAL_DAYS.
  */
 export default function HomeShopCta() {
   return (
@@ -25,15 +24,9 @@ export default function HomeShopCta() {
         <div className="flex shrink-0 flex-col gap-2 sm:flex-row sm:items-center">
           <Link
             href="/for-shops"
-            className="inline-flex min-h-11 items-center justify-center rounded-xl border border-white/30 px-5 text-sm font-semibold text-white transition-colors hover:border-white/60 hover:bg-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E9D9C3]"
-          >
-            See how it works
-          </Link>
-          <Link
-            href="/register/store"
             className="inline-flex min-h-11 items-center justify-center rounded-xl bg-white px-5 text-sm font-semibold text-[#2E1C14] transition-colors hover:bg-[#F3EBE3] focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[#E9D9C3]"
           >
-            Register your shop
+            See how it works
           </Link>
         </div>
       </div>

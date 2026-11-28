@@ -24,15 +24,15 @@ const H2 = 'text-display text-2xl sm:text-[32px] font-semibold leading-tight tex
 
 const DESK: { title: string; text: string }[] = [
   { title: 'Appointments and fittings', text: 'Customers book online or you add walk-ins. Approve, reschedule or decline in one place, and see who arrived early.' },
-  { title: 'Measurements', text: 'Type in your staff’s tape figures or snap the paper sheet. They stay on the customer’s profile for next time.' },
-  { title: 'Job orders', text: 'A quote the customer approves becomes a job order. Your staff move it from cutting to sewing to ready, one tap a stage.' },
-  { title: 'Payments, tracked', text: 'Record deposits and balances, check GCash receipts, and see what is still owed. Customers pay you directly.' },
+  { title: 'Measurements', text: 'Type the measurements in, or attach a photo of the paper sheet. They’re saved to the customer’s profile and fill in their next order.' },
+  { title: 'Job orders', text: 'Online orders and walk-ins land on one board. You approve them, and your staff move each one through Production, Quality Check, fitting and Ready for Pickup.' },
+  { title: 'Payments, tracked', text: 'Record cash and GCash payments, verify the receipts customers send, and see what’s still owed. Customers pay you directly.' },
 ];
 
 const ALSO: { icon: LucideIcon; title: string; text: string }[] = [
   { icon: Users, title: 'Roles for your team', text: 'Accounts for branch managers and staff. Each person sees only what their job needs.' },
   { icon: GitBranch, title: 'Branches', text: 'Run more than one branch, with orders, staff and reports kept per branch.' },
-  { icon: Shirt, title: 'Your designs and services', text: 'Publish what you make, with prices or a quote, for customers to browse.' },
+  { icon: Shirt, title: 'Your services, designs and packages', text: 'Post what you make with its price, and bundle services into combo packages customers can order.' },
   { icon: BarChart3, title: 'Reports', text: 'Sales, orders and staff output for any period, ready to print.' },
   { icon: PackageSearch, title: 'Order tracking', text: 'Give customers a code to follow their order without signing in.' },
   { icon: ShieldCheck, title: 'Verified listing', text: 'Only shops checked by the SUTURA team are listed and appear on the map.' },
@@ -40,9 +40,9 @@ const ALSO: { icon: LucideIcon; title: string; text: string }[] = [
 
 const CUSTOMER_SIDE: { icon: LucideIcon; title: string; text: string }[] = [
   { icon: MapPin, title: 'Found on the map', text: 'Customers search by garment and district and open your branch’s page.' },
-  { icon: CalendarCheck, title: 'Booked in a few taps', text: 'They pick a service and a time; the request lands in your appointments.' },
-  { icon: Smartphone, title: 'Their order, without asking', text: 'Customers follow each stage and see what is paid, instead of messaging “sa na po ba?”.' },
-  { icon: Star, title: 'Ratings that build your listing', text: 'Reviews from real customers appear on your shop and your designs.' },
+  { icon: CalendarCheck, title: 'Ordered or booked in a few taps', text: 'They place an order or book a fitting at your branch. It lands in your orders or appointments for you to approve.' },
+  { icon: Smartphone, title: 'Order status, without asking', text: 'Customers follow each stage and see what’s paid on their own, instead of messaging for updates.' },
+  { icon: Star, title: 'Ratings that build your listing', text: 'Reviews from real customers appear on your shop, services and designs.' },
 ];
 
 const STEPS: { title: string; text: string; when: string }[] = [
@@ -132,7 +132,7 @@ export default function ForShopsView() {
     { q: 'What do I need to apply?', a: 'Your shop’s name, address and map pin, your DTI Business Name Registration and Barangay Business Clearance, a government ID and a selfie holding it. A TIN or BIR Form 2303 and a Mayor’s permit are optional but help us approve you faster.' },
     { q: 'Can my staff have their own accounts?', a: `Yes. You create accounts for staff and branch managers, and each sees only what their role needs.${staffLimits ? ` Staff accounts per plan: ${staffLimits}.` : ''}` },
     { q: 'How many branches can I run?', a: branchPlans.length ? `Every plan includes your main shop. ${branchPlans.map((p) => `${p.name} adds up to ${p.max_branches} branch ${p.max_branches === 1 ? 'shop' : 'shops'}`).join('; ')}.` : 'Every plan includes your main shop; extra branches come with the higher plan.' },
-    { q: 'How do customers book?', a: 'They find you on SUTURA or the map, pick a service or design and a time at your branch. The request arrives in your appointments, and you approve, reschedule or decline it.' },
+    { q: 'How do customers order or book?', a: 'They find you on SUTURA or the map, open your branch and either place an order for a service, design or package, or book a fitting. Orders arrive on your Production Orders board and bookings in your appointments, for you to approve.' },
     { q: 'Does SUTURA take payments for my orders?', a: 'No. Customers pay you directly, in person or by your GCash. SUTURA records deposits and balances, and lets you check GCash receipts customers upload.' },
     { q: 'How do I pay for my plan?', a: 'With GCash in Billing, monthly or yearly. SUTURA never charges you automatically: a plan renews only when you pay for it again.' },
     { q: 'What happens when my trial ends?', a: 'If you haven’t chosen a plan, your shop is hidden from customers and becomes read-only. Every record is kept, and paying for a plan restores everything.' },
@@ -170,8 +170,8 @@ export default function ForShopsView() {
               From the first fitting to the final handover.
             </h1>
             <p className="mt-5 max-w-lg text-base sm:text-lg leading-relaxed text-ink-body">
-              SUTURA keeps every order in one record: the booking, the measurements, the quote, the sewing and the
-              payments. Your shop is listed for customers across Davao City.
+              SUTURA keeps every order in one record: the booking, the measurements, each production stage and every
+              payment. Your shop is listed for customers across Davao City.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
               <Link href={APPLY} className={PRIMARY}>Start free trial <ArrowRight size={16} aria-hidden="true" /></Link>
